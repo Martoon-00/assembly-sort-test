@@ -1,0 +1,106 @@
+name:                assembly-sort-test
+version:             0.1.0.0
+synopsis:            tests and benchs for certain assembly task
+homepage:            https://github.com/githubuser/assembly-sort-test#readme
+license:             BSD3
+license-file:        LICENSE
+author:              K. Ivanov
+maintainer:          martoon.hsk@gmail.com
+category:            Test
+build-type:          Simple
+extra-source-files:  README.md
+cabal-version:       >=1.10
+
+library
+  hs-source-dirs:      lib
+  exposed-modules:     Asm.Env
+  build-depends:       base >= 4.7 && < 5
+                     , universum
+  default-language:    Haskell2010
+  default-extensions:  ExplicitForAll
+                       FlexibleContexts
+                       FlexibleInstances
+                       OverloadedStrings
+                       TypeOperators
+                       ConstraintKinds
+                       LambdaCase
+                       MultiParamTypeClasses
+                       MultiWayIf
+                       NoImplicitPrelude
+                       OverloadedStrings
+                       ScopedTypeVariables
+                       TupleSections
+                       TypeApplications
+                       TypeOperators
+                       RecordWildCards
+                       ViewPatterns
+  ghc-options:         -Wall
+
+test-suite assembly-sort-test
+  type:                exitcode-stdio-1.0
+  hs-source-dirs:      test
+  main-is:             Test.hs
+  other-modules:       Spec
+
+                       Test.Asm.AllSpec
+                       
+  build-depends:       base >= 4.7 && < 5
+                     , assembly-sort-test
+                     , QuickCheck
+                     , hspec
+                     , universum
+  ghc-options:         -threaded -rtsopts -with-rtsopts=-N
+  default-language:    Haskell2010
+  default-extensions:  ExplicitForAll
+                       FlexibleContexts
+                       FlexibleInstances
+                       OverloadedStrings
+                       TypeOperators
+                       ConstraintKinds
+                       LambdaCase
+                       MultiParamTypeClasses
+                       MultiWayIf
+                       NoImplicitPrelude
+                       OverloadedStrings
+                       ScopedTypeVariables
+                       TupleSections
+                       TypeApplications
+                       TypeOperators
+                       RecordWildCards
+                       ViewPatterns
+  ghc-options:         -Wall
+
+benchmark bench
+  main-is:             Main.hs
+  type:                exitcode-stdio-1.0
+  build-depends:       base >= 4.7 && < 5
+                     , assembly-sort-test
+                     , criterion
+                     , deepseq
+                     , QuickCheck
+                     , universum
+  hs-source-dirs:      bench
+  default-language:    Haskell2010
+  ghc-options:         -threaded -Wall -fno-warn-orphans
+  default-extensions:  ExplicitForAll
+                       FlexibleContexts
+                       FlexibleInstances
+                       OverloadedStrings
+                       TypeOperators
+                       ConstraintKinds
+                       LambdaCase
+                       MultiParamTypeClasses
+                       MultiWayIf
+                       NoImplicitPrelude
+                       OverloadedStrings
+                       ScopedTypeVariables
+                       TupleSections
+                       TypeApplications
+                       TypeOperators
+                       RecordWildCards
+                       ViewPatterns
+  ghc-options:         -Wall
+
+source-repository head
+  type:     git
+  location: https://github.com/githubuser/assembly-sort-test
