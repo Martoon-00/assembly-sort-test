@@ -19,6 +19,9 @@ do
         tests=true
     elif [[ $var == "bench" ]]; then
         benchs=true
+    elif [[ $var == "all" ]]; then
+        tests=true
+        benchs=true
     elif [[ $var == "run" ]]; then
         run=true
     fi

@@ -9,7 +9,7 @@ main = defaultMain
         [
         ]
 
-    , bgroup "index build + queries"
+    , bgroup "queries"
         [
         ]
 

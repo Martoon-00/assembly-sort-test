@@ -14,7 +14,15 @@ cabal-version:       >=1.10
 library
   hs-source-dirs:      lib
   exposed-modules:     Asm.Env
+                       Asm.Process
+                       Asm.Launcher
   build-depends:       base >= 4.7 && < 5
+                     , async
+                     , directory
+                     , formatting
+                     , process
+                     , reflection
+                     , text-format
                      , universum
   default-language:    Haskell2010
   default-extensions:  ExplicitForAll
@@ -46,6 +54,7 @@ test-suite assembly-sort-test
                        
   build-depends:       base >= 4.7 && < 5
                      , assembly-sort-test
+                     , formatting
                      , QuickCheck
                      , hspec
                      , universum
