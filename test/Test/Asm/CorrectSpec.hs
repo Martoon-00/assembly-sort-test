@@ -1,11 +1,11 @@
--- | Properties on assembly program.
+-- | Properties on successful executions of assembly program.
 
-module Test.Asm.AllSpec
+module Test.Asm.CorrectSpec
     ( spec
     ) where
 
 import           Test.Hspec            (Expectation, Spec, describe, expectationFailure,
-                                        expectationFailure, it)
+                                        it)
 import           Test.Hspec.QuickCheck (modifyMaxSuccess)
 import           Test.QuickCheck       (Gen, arbitrary, elements, forAll, listOf, listOf1,
                                         property, resize)
@@ -36,7 +36,7 @@ spec = do
             it "1 key-value pair, 1 query, no newline at end" $
                 launch "aa v1\n" "aa" `hasOnlyStdout` oneLine "v1"
 
-        describe "minmax" . modifyMaxSuccess (* 10) $ do
+        describe "minmax" . modifyMaxSuccess (`div` 10) $ do
             it "no entries" $
                 launch "" "" `hasOnlyStdout` null
 
@@ -67,10 +67,6 @@ spec = do
                 forAll (resize 10000 $ someKeysOf entries) $
                     \queries ->
                 correctlySolves entries queries
-
-
-    describe "error scenarious" $ do
-        return ()
 
 
 launch :: ProgramFileInput -> ProgramInput -> IO ProgramOutput

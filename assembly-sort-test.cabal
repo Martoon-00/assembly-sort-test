@@ -54,7 +54,8 @@ test-suite assembly-sort-test
   main-is:             Test.hs
   other-modules:       Spec
 
-                       Test.Asm.AllSpec
+                       Test.Asm.CorrectSpec
+                       Test.Asm.ErrorSpec
                        
   build-depends:       base >= 4.7 && < 5
                      , assembly-sort-test
