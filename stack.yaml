@@ -4,6 +4,8 @@ packages:
 - '.'
 
 extra-deps:
+  - criterion-1.2.4.0
+  - statistics-0.14.0.2
   - universum-0.7.1.1
 
 flags: {}

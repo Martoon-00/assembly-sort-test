@@ -20,7 +20,9 @@ type Value = Text
 data KeyValue = KeyValue
     { getKey   :: Key
     , getValue :: Value
-    } deriving (Show)
+    } deriving (Show, Generic)
+
+instance NFData KeyValue
 
 instance Buildable KeyValue where
     build (KeyValue k v) = bprint (build%" "%build) k v
@@ -47,6 +49,12 @@ genAsciiText = fmap toText . listOf $ chooseAny `suchThat` acceptableChar
 
 instance Arbitrary KeyValue where
     arbitrary = genKeyValue genSimpleText
+
+someKeyOf :: [KeyValue] -> Gen Key
+someKeyOf = fmap getKey . elements
+
+someKeysOf :: [KeyValue] -> Gen [Key]
+someKeysOf = listOf . someKeyOf
 
 buildList :: Buildable a => [a] -> Text
 buildList = foldMap ((<> "\n") . pretty)

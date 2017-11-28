@@ -91,8 +91,3 @@ correctlySolves entries queries =
 oneLine :: Text -> Text -> Bool
 oneLine line output = line <> "\n" == output
 
-someKeyOf :: [KeyValue] -> Gen Key
-someKeyOf = fmap getKey . elements
-
-someKeysOf :: [KeyValue] -> Gen [Key]
-someKeysOf = listOf . someKeyOf

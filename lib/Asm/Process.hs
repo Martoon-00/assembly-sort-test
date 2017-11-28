@@ -12,6 +12,7 @@ module Asm.Process
 
 import           Control.Concurrent       (forkIO, killThread)
 import qualified Control.Concurrent.Async as A
+import           Control.DeepSeq          (NFData)
 import           Control.Exception        (SomeException, evaluate, handle, onException,
                                            throwIO, try)
 import           Control.Monad            (unless)
@@ -28,14 +29,19 @@ import           Universum
 
 -- TODO: type or newtype?
 newtype ProgramInput = ProgramInput Text
-    deriving (IsString)
+    deriving (IsString, Generic)
+
+instance NFData ProgramInput
+
 type ProgramStdout = Text
 type ProgramStderr = Text
 
 data ProgramOutput = ProgramOutput
     { poStdout :: !ProgramStdout
     , poStderr :: !ProgramStderr
-    } deriving (Show)
+    } deriving (Show, Generic)
+
+instance NFData ProgramOutput
 
 -- | Copy-pasted `readCreateProcess` functions, with slight differences:
 -- 1. Fetches both stdout and stderr

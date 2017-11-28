@@ -20,6 +20,7 @@ library
   build-depends:       base >= 4.7 && < 5
                      , async
                      , containers
+                     , deepseq
                      , directory
                      , formatting
                      , process
@@ -29,7 +30,8 @@ library
                      , QuickCheck
                      , universum
   default-language:    Haskell2010
-  default-extensions:  ExplicitForAll
+  default-extensions:  DeriveGeneric
+                       ExplicitForAll
                        FlexibleContexts
                        FlexibleInstances
                        OverloadedStrings
@@ -89,14 +91,15 @@ benchmark bench
   type:                exitcode-stdio-1.0
   build-depends:       base >= 4.7 && < 5
                      , assembly-sort-test
-                     , criterion
+                     , criterion >= 1.2.4.0
                      , deepseq
                      , QuickCheck
                      , universum
   hs-source-dirs:      bench
   default-language:    Haskell2010
   ghc-options:         -threaded -Wall -fno-warn-orphans
-  default-extensions:  ExplicitForAll
+  default-extensions:  BangPatterns
+                       ExplicitForAll
                        FlexibleContexts
                        FlexibleInstances
                        OverloadedStrings

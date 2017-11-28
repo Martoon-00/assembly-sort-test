@@ -11,6 +11,7 @@ module Asm.Launcher
     , ProgramStderr
     , ProgramException
     , fillingInputFile
+    , fillingInputFileWith
 
     , launchProcessWithInit
     , launchProcess
@@ -37,17 +38,26 @@ type InputFileFilled = Given InputFileFilledUp
 -- | Key-value data executable should take from file.
 type ProgramFileInput = ProgramInput
 
+-- | Generalized version of 'fillingInputFile' to accept different
+-- 'bracket_'-like functions.
+fillingInputFileWith
+    :: (IO () -> IO () -> b -> b)
+    -> ProgramFileInput
+    -> (InputFileFilled => b)
+    -> b
+fillingInputFileWith bracket_' (ProgramInput fileInput) act =
+    bracket_' mkInputFile removeInputFile $ give InputFileFilledUp act
+  where
+    mkInputFile = writeFile inputPath fileInput
+    removeInputFile = removeFile inputPath
+
 -- | Fills expected input file 'inputPath' with given data upon performing
 -- action.
 --
 -- This function not part of launching functions with intention, see its usages
 -- in benchs.
 fillingInputFile :: ProgramFileInput -> (InputFileFilled => IO a) -> IO a
-fillingInputFile (ProgramInput fileInput) act =
-    bracket_ mkInputFile removeInputFile $ give InputFileFilledUp act
-  where
-    mkInputFile = writeFile inputPath fileInput
-    removeInputFile = removeFile inputPath
+fillingInputFile = fillingInputFileWith bracket_
 
 -- * Launch
 
