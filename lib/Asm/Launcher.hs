@@ -5,7 +5,7 @@
 module Asm.Launcher
     ( InputFileFilled
     , ProgramFileInput
-    , ProgramInput
+    , ProgramInput (..)
     , ProgramOutput (..)
     , ProgramStdout
     , ProgramStderr
@@ -35,7 +35,7 @@ data InputFileFilledUp = InputFileFilledUp
 type InputFileFilled = Given InputFileFilledUp
 
 -- | Key-value data executable should take from file.
-type ProgramFileInput = Text
+type ProgramFileInput = ProgramInput
 
 -- | Fills expected input file 'inputPath' with given data upon performing
 -- action.
@@ -43,7 +43,7 @@ type ProgramFileInput = Text
 -- This function not part of launching functions with intention, see its usages
 -- in benchs.
 fillingInputFile :: ProgramFileInput -> (InputFileFilled => IO a) -> IO a
-fillingInputFile fileInput act =
+fillingInputFile (ProgramInput fileInput) act =
     bracket_ mkInputFile removeInputFile $ give InputFileFilledUp act
   where
     mkInputFile = writeFile inputPath fileInput

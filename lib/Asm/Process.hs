@@ -1,7 +1,9 @@
+{-# LANGUAGE GeneralizedNewtypeDeriving #-}
+
 -- | Utils to work with OS processes.
 
 module Asm.Process
-    ( ProgramInput
+    ( ProgramInput (..)
     , ProgramStdout
     , ProgramStderr
     , ProgramOutput (..)
@@ -13,6 +15,7 @@ import qualified Control.Concurrent.Async as A
 import           Control.Exception        (SomeException, evaluate, handle, onException,
                                            throwIO, try)
 import           Control.Monad            (unless)
+import           Data.String              (IsString)
 import           Foreign.C.Error          (Errno (..), ePIPE)
 import           GHC.IO.Exception         (IOErrorType (..), IOException (..))
 import           System.Exit              (ExitCode (..))
@@ -23,7 +26,9 @@ import           System.Process           (CreateProcess (..), ProcessHandle,
 import           System.Process.Internals (ProcessHandle (..), stopDelegateControlC)
 import           Universum
 
-type ProgramInput = Text
+-- TODO: type or newtype?
+newtype ProgramInput = ProgramInput Text
+    deriving (IsString)
 type ProgramStdout = Text
 type ProgramStderr = Text
 
@@ -35,6 +40,9 @@ data ProgramOutput = ProgramOutput
 -- | Copy-pasted `readCreateProcess` functions, with slight differences:
 -- 1. Fetches both stdout and stderr
 -- 2. Decouples initialization from interaction phase.
+--
+-- Note that this passes input strictly, and fetches output strictly as well,
+-- blocking until stdout and stderr are entirely evaluated.
 readCreateProcess
     :: FilePath
     -> IO (ProgramInput -> IO (ExitCode, ProgramOutput))
@@ -51,7 +59,7 @@ readCreateProcess executable = do
           \(Just inh) (Just outh) (Just errh) ph -> do
 
             -- wait for permission to start interaction phase
-            input <- takeMVar inputBox
+            ProgramInput input <- takeMVar inputBox
 
             -- fork off a thread to start consuming the output
             poStdout <- toText <$> hGetContents outh

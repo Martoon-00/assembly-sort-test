@@ -13,16 +13,20 @@ cabal-version:       >=1.10
 
 library
   hs-source-dirs:      lib
-  exposed-modules:     Asm.Env
+  exposed-modules:     Asm.Data
+                       Asm.Env
                        Asm.Process
                        Asm.Launcher
   build-depends:       base >= 4.7 && < 5
                      , async
+                     , containers
                      , directory
                      , formatting
                      , process
                      , reflection
+                     , text
                      , text-format
+                     , QuickCheck
                      , universum
   default-language:    Haskell2010
   default-extensions:  ExplicitForAll
