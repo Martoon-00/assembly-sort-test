@@ -6,7 +6,8 @@ import qualified Data.Map            as M
 import qualified Data.Text           as T
 import qualified Data.Text.Buildable
 import           Formatting          (bprint, build, (%))
-import           Test.QuickCheck     (Arbitrary (..), Gen, elements, listOf, suchThat)
+import           Test.QuickCheck     (Arbitrary (..), Gen, elements, listOf, sublistOf,
+                                      suchThat)
 import           Test.QuickCheck.Gen (chooseAny, infiniteListOf)
 import           Universum
 import           Unsafe              (unsafeInit, unsafeLast)
@@ -40,21 +41,29 @@ solve entries queries =
 genKeyValue :: Gen Text -> Gen KeyValue
 genKeyValue = join (liftM2 KeyValue) . (`suchThat` (not . null))
 
-genSimpleText :: Gen Text
-genSimpleText = fmap toText . listOf $ elements (['a'..'z'] <> ['0'..'9'])
+withSimpleText :: Gen Text
+withSimpleText = fmap toText . listOf $ elements (['a'..'z'] <> ['0'..'9'])
 
-genAsciiText :: Gen Text
-genAsciiText = fmap toText . listOf $ chooseAny `suchThat` acceptableChar
-  where acceptableChar c = c /= ' ' && c /= '\n'
+withAsciiText :: Gen Text
+withAsciiText = fmap toText . listOf $ chooseAny `suchThat` acceptableChar
+  where acceptableChar c = all (/= c) [' ', '\n', '\r']
 
 instance Arbitrary KeyValue where
-    arbitrary = genKeyValue genSimpleText
+    arbitrary = genKeyValue withSimpleText
 
 someKeyOf :: [KeyValue] -> Gen Key
 someKeyOf = fmap getKey . elements
 
 someKeysOf :: [KeyValue] -> Gen [Key]
 someKeysOf = listOf . someKeyOf
+
+makeRepeatingKeys :: [KeyValue] -> Gen [KeyValue]
+makeRepeatingKeys entries
+    | null entries = error "makeRepeatingKeys: can't do for empty list"
+    | otherwise = do
+        let keys = map getKey entries
+        keys' <- sublistOf keys `suchThat` (not . null)
+        forM entries $ \(KeyValue _ value) -> flip KeyValue value <$> elements keys'
 
 buildList :: Buildable a => [a] -> Text
 buildList = foldMap ((<> "\n") . pretty)
