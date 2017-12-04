@@ -1,6 +1,6 @@
 -- | Properties on successful executions of assembly program.
 
-module Test.Asm.CorrectSpec
+module Test.Asm.SuccessSpec
     ( spec
     ) where
 

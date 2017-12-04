@@ -29,7 +29,7 @@ import           Universum
 
 -- TODO: type or newtype?
 newtype ProgramInput = ProgramInput Text
-    deriving (IsString, Generic)
+    deriving (Show, IsString, Generic)
 
 instance NFData ProgramInput
 
