@@ -8,7 +8,7 @@ import qualified Data.Text.Buildable
 import           Formatting          (bprint, build, (%))
 import           Test.QuickCheck     (Arbitrary (..), Gen, elements, listOf, sublistOf,
                                       suchThat)
-import           Test.QuickCheck.Gen (chooseAny, infiniteListOf)
+import           Test.QuickCheck.Gen (choose, infiniteListOf)
 import           Universum
 import           Unsafe              (unsafeInit, unsafeLast)
 
@@ -45,8 +45,8 @@ withSimpleText :: Gen Text
 withSimpleText = fmap toText . listOf $ elements (['a'..'z'] <> ['0'..'9'])
 
 withAsciiText :: Gen Text
-withAsciiText = fmap toText . listOf $ chooseAny `suchThat` acceptableChar
-  where acceptableChar c = all (/= c) [' ', '\n', '\r']
+withAsciiText = fmap toText . listOf $ choose ('\0', '\255') `suchThat` noControlChars
+  where noControlChars c = c < '\5' || c > ' '
 
 instance Arbitrary KeyValue where
     arbitrary = genKeyValue withSimpleText

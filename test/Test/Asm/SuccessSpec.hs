@@ -4,10 +4,11 @@ module Test.Asm.SuccessSpec
     ( spec
     ) where
 
+import           Formatting            (formatToString, stext, (%))
 import           Test.Hspec            (Expectation, Spec, describe, expectationFailure,
                                         it)
 import           Test.Hspec.QuickCheck (modifyMaxSuccess, prop)
-import           Test.QuickCheck       (arbitrary, forAll, listOf1, resize)
+import           Test.QuickCheck       (arbitrary, forAll, listOf1, resize, vectorOf)
 import           Universum
 
 import           Asm.Data
@@ -18,10 +19,10 @@ spec :: Spec
 spec = do
     describe "basic" $ do
         it "1 key-value entry, no queries" $
-            launch "aa v1\n" "" `hasOnlyStdout` null
+            launch "aa v1\n" "" `hasOnlyStdoutWhich` null
 
         it "1 key-value entry, 1 query" $
-            launch "aa v1\n" "aa\n" `hasOnlyStdout` oneLine "v1"
+            launch "aa v1\n" "aa\n" `hasOnlyStdoutWhich` oneLine "v1"
 
         prop "few entires, few queries" $
             forAll (resize 10 $ listOf1 $ arbitrary @KeyValue) $
@@ -33,11 +34,11 @@ spec = do
     describe "special cases" $ do
         describe "newlines" $
             it "1 key-value pair, 1 query, no newline at end" $
-                launch "aa v1\n" "aa" `hasOnlyStdout` oneLine "v1"
+                launch "aa v1\n" "aa" `hasOnlyStdoutWhich` oneLine "v1"
 
         describe "minmax" . modifyMaxSuccess (`div` 10) $ do
             it "no entries" $
-                launch "" "" `hasOnlyStdout` null
+                launch "" "" `hasOnlyStdoutWhich` null
 
             prop "plenty of entires, many queries" $
                 forAll (resize 1000 $ listOf1 arbitrary) $
@@ -77,7 +78,7 @@ spec = do
         prop "all ascii" $
             forAll (resize 4 $ listOf1 $ resize 10 $ genKeyValue withAsciiText) $
                 \entries ->
-            forAll (resize 10 $ someKeysOf entries) $
+            forAll (vectorOf 1 $ resize 10 $ someKeyOf entries) $
                 \queries ->
             correctlySolves entries queries
 
@@ -85,20 +86,35 @@ spec = do
 launch :: ProgramFileInput -> ProgramInput -> IO ProgramOutput
 launch fileInput input = fillingInputFile fileInput $ launchProcess input
 
-hasOnlyStdout :: IO ProgramOutput -> (ProgramStdout -> Bool) -> Expectation
-hasOnlyStdout launcher checker = do
+hasOnlyStdoutExt :: IO ProgramOutput -> (ProgramStdout -> Expectation) -> Expectation
+hasOnlyStdoutExt launcher checker = do
     ProgramOutput{..} <- launcher
     unless (null poStderr) $
         expectationFailure . toString $
             "Expected empty stderr, but got: " <> poStderr
-    unless (checker poStdout) $
-        expectationFailure $ "Got wrong stdout: '" <> toString poStdout <> "'"
+    checker poStdout
+
+hasOnlyStdoutWhich :: IO ProgramOutput -> (ProgramStdout -> Bool) -> Expectation
+hasOnlyStdoutWhich launcher checker =
+    hasOnlyStdoutExt launcher $ \output ->
+        unless (checker output) $
+            expectationFailure $
+            formatToString ("Got wrong stdout: "%stext)
+                output
+
+hasOnlyStdout :: IO ProgramOutput -> ProgramStdout -> Expectation
+hasOnlyStdout launcher expected =
+    hasOnlyStdoutExt launcher $ \output ->
+        unless (output == expected) $
+            expectationFailure $
+            formatToString ("Got wrong stdout: "%stext%"\n  Expected: "%stext)
+                output expected
 
 correctlySolves :: [KeyValue] -> [Key] -> Expectation
 correctlySolves entries queries =
     launch (toInput entries) (toInput queries)
         `hasOnlyStdout`
-    (== buildList (solve entries queries))
+    buildList (solve entries queries)
 
 
 oneLine :: Text -> Text -> Bool
