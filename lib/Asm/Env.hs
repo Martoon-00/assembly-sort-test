@@ -5,6 +5,7 @@ module Asm.Env
     ( programPath
     , inputPath
     , useOneQuery
+    , useLaxTests
     ) where
 
 import           System.Environment (lookupEnv)
@@ -33,3 +34,9 @@ inputPath = fromMaybe "./sort.in" $ env "INPUT_PATH"
 useOneQuery :: Bool
 useOneQuery = flag "ONE_QUERY"
 {-# NOINLINE useOneQuery #-}
+
+-- | Given requirements are quite vague.
+-- Use this if test case fits only to particular version of program.
+useLaxTests :: Bool
+useLaxTests = flag "LAX_TESTS"
+{-# NOINLINE useLaxTests #-}

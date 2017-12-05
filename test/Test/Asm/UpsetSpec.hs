@@ -12,6 +12,7 @@ import           Test.Hspec.QuickCheck (prop)
 import           Test.QuickCheck       (elements, forAll, listOf)
 import           Universum
 
+import           Asm.Env
 import           Asm.Launcher
 import           Test.Asm.Common
 
@@ -29,7 +30,8 @@ spec = do
         prop "empty value in entries" $
             launch "k \n" "" `hasOnlyStderr` (errExit &&&& oneError)
 
-    describe "line numbers in errors" $ do
+    -- not for lax because line numbers enumeration may start from 0, not 1
+    unless useLaxTests . describe "line numbers in errors" $ do
         prop "simple" $
             launch "a v1\nb v2\nc" ""
                 `hasOnlyStderr` (errExit &&&& oneErrorWithLineNumber 3)
