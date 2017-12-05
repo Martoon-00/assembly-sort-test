@@ -3,7 +3,7 @@
 
 module Asm.Env
     ( programPath
-    , inputPath
+    , inputFile
     , useOneQuery
     , useLaxTests
     ) where
@@ -25,10 +25,10 @@ programPath :: FilePath
 programPath = fromMaybe "./sort" $ env "PROG_PATH"
 {-# NOINLINE programPath #-}
 
--- | Path to input file which executable expects.
-inputPath :: FilePath
-inputPath = fromMaybe "./sort.in" $ env "INPUT_PATH"
-{-# NOINLINE inputPath #-}
+-- | Name of file which executable expects.
+inputFile :: FilePath
+inputFile = fromMaybe "./sort.in" $ env "INPUT_FILE"
+{-# NOINLINE inputFile #-}
 
 -- | No more than one query will be passed to program.
 useOneQuery :: Bool

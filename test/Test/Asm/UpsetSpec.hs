@@ -16,8 +16,11 @@ import           Asm.Env
 import           Asm.Launcher
 import           Test.Asm.Common
 
+-- These tests execute only if 'LAX_TESTS' hasn't been passed,
+-- because exit codes and where error messages are printed to may vary from
+-- program to program.
 spec :: Spec
-spec = do
+spec = unless useLaxTests $ do
     prop "no entries, 1 query" $
         forAll (fmap (ProgramInput . toText) $ listOf $ elements ['\n', '\r']) $
             \fileInput ->
@@ -30,8 +33,7 @@ spec = do
         prop "empty value in entries" $
             launch "k \n" "" `hasOnlyStderr` (errExit &&&& oneError)
 
-    -- not for lax because line numbers enumeration may start from 0, not 1
-    unless useLaxTests . describe "line numbers in errors" $ do
+    describe "line numbers in errors" $ do
         prop "simple" $
             launch "a v1\nb v2\nc" ""
                 `hasOnlyStderr` (errExit &&&& oneErrorWithLineNumber 3)

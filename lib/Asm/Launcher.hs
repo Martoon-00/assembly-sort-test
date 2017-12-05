@@ -51,8 +51,8 @@ fillingInputFileWith
 fillingInputFileWith bracket_' (ProgramInput fileInput) act =
     bracket_' mkInputFile removeInputFile $ give InputFileFilledUp act
   where
-    mkInputFile = writeFile inputPath fileInput
-    removeInputFile = removeFile inputPath
+    mkInputFile = writeFile inputFile fileInput
+    removeInputFile = removeFile inputFile
 
 -- | Fills expected input file 'inputPath' with given data upon performing
 -- action.
