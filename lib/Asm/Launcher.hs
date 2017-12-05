@@ -13,6 +13,9 @@ module Asm.Launcher
     , fillingInputFile
     , fillingInputFileWith
 
+    , launchProcessExt
+    , squashInit
+
     , launchProcessWithInit
     , launchProcess
     ) where
@@ -74,6 +77,14 @@ instance Buildable ProgramException where
         bprint ("Program exited with "%build%"\nreason: "%stext)
         peExitCode peStderr
 
+-- | High-level launcher, which passed 'programPath' derived from environment
+-- and ensures that input file exists when executing.
+-- For full explanation see 'launchProcessWithInit' below.
+launchProcessExt
+    :: InputFileFilled
+    => IO (ProgramInput -> IO (ExitCode, ProgramOutput))
+launchProcessExt = readCreateProcess programPath
+
 -- | Launches executable specified by 'programPath'.
 --
 -- Once outer 'IO' is executed, process is started but no input fed.
@@ -85,15 +96,19 @@ launchProcessWithInit
     :: InputFileFilled
     => IO (ProgramInput -> IO ProgramOutput)
 launchProcessWithInit =
-    readCreateProcess programPath <&> \performInteraction input -> do
+    launchProcessExt <&> \performInteraction input -> do
         (exitCode, output) <- performInteraction input
         case exitCode of
             ExitSuccess      -> pure output
             ExitFailure code -> throwM $ ProgramException code (poStderr output)
 
+-- | Neglects decoupling between init and interaction phrases.
+squashInit :: IO (a -> IO b) -> a -> IO b
+squashInit launcher input = launcher >>= ($ input)
+
 -- | Launches executable specified by 'programPath'.
 --
 -- If program terminates with error, 'ProgramException' will be thrown.
 launchProcess :: InputFileFilled => ProgramInput -> IO ProgramOutput
-launchProcess input = launchProcessWithInit >>= ($ input)
+launchProcess = squashInit launchProcessWithInit
 

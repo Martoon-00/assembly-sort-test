@@ -42,6 +42,7 @@ main = defaultMain
 
     ]
 
+-- | 'bracket_' version of 'envWithCleanup'.
 envWithCleanup_ :: IO () -> IO () -> Benchmark -> Benchmark
 envWithCleanup_ pre post = envWithCleanup pre (const post) . const
 

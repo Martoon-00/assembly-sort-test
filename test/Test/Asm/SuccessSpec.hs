@@ -14,6 +14,7 @@ import           Universum
 
 import           Asm.Data
 import           Asm.Launcher
+import           Test.Asm.Common
 
 
 spec :: Spec
@@ -115,10 +116,10 @@ withClassicalInput mkProp =
         \queries ->
     mkProp entries queries
 
-type Predicate = (Text, ProgramStdout -> Bool)
-
-hasOnlyStdoutWhichIs :: IO ProgramOutput -> Predicate -> Expectation
-hasOnlyStdoutWhichIs launcher (expected, checker) = do
+hasOnlyStdoutWhichIs :: IO ProgramOutput
+                     -> Predicate ProgramStdout
+                     -> Expectation
+hasOnlyStdoutWhichIs launcher (Predicate expected checker) = do
     ProgramOutput{..} <- launcher
     unless (null poStderr) $
         expectationFailure . toString $
@@ -139,11 +140,8 @@ correctlySolves entries queries =
     buildList (solve entries queries)
 
 
-oneLine :: Text -> Predicate
-oneLine line = ("one line", \output -> line <> "\n" == output)
+oneLine :: Text -> Predicate ProgramStdout
+oneLine line = "one line" >? \output -> line <> "\n" == output
 
-emptyOutput :: Predicate
-emptyOutput = ("empty", null)
-
-exactly :: Text -> Predicate
-exactly a = (pretty a, (== a))
+emptyOutput :: Predicate ProgramStdout
+emptyOutput = "empty" >? null
