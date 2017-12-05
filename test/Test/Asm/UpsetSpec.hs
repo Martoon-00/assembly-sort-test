@@ -4,6 +4,7 @@ module Test.Asm.UpsetSpec
     ( spec
     ) where
 
+import qualified Data.Text             as T
 import           Test.Hspec            (Expectation, Spec, expectationFailure)
 import           Test.Hspec.QuickCheck (prop)
 import           Test.QuickCheck       (elements, forAll, listOf)
@@ -18,7 +19,7 @@ spec = do
     prop "no entries, 1 query" $
         forAll (fmap (ProgramInput . toText) $ listOf $ elements ['\n', '\r']) $
             \fileInput ->
-        launch fileInput "aa\n" `hasOnlyStderr` const True
+        launch fileInput "aa\n" `hasOnlyStderr` oneErrorLine
 
 
 launch :: ProgramFileInput -> ProgramInput -> IO ProgramOutput
@@ -33,3 +34,8 @@ hasOnlyStderr launcher checker = do
     unless (checker poStderr) $
         expectationFailure $ "Got wrong stderr: '" <> toString poStdout <> "'"
 
+oneErrorLine :: ProgramStdout -> Bool
+oneErrorLine output =
+    case T.split (\c -> c == '\n' || c == '\r') output of
+        [_, ""] -> True
+        _       -> False

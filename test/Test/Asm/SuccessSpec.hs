@@ -8,7 +8,8 @@ import           Formatting            (formatToString, stext, (%))
 import           Test.Hspec            (Expectation, Spec, describe, expectationFailure,
                                         it)
 import           Test.Hspec.QuickCheck (modifyMaxSuccess, prop)
-import           Test.QuickCheck       (arbitrary, forAll, listOf1, resize, vectorOf)
+import           Test.QuickCheck       (Property, Testable, arbitrary, forAll, listOf1,
+                                        resize, vectorOf)
 import           Universum
 
 import           Asm.Data
@@ -19,26 +20,45 @@ spec :: Spec
 spec = do
     describe "basic" $ do
         it "1 key-value entry, no queries" $
-            launch "aa v1\n" "" `hasOnlyStdoutWhich` null
+            launch "aa v1\n" "" `hasOnlyStdoutWhichIs` emptyOutput
 
         it "1 key-value entry, 1 query" $
-            launch "aa v1\n" "aa\n" `hasOnlyStdoutWhich` oneLine "v1"
+            launch "aa v1\n" "aa\n" `hasOnlyStdoutWhichIs` oneLine "v1"
 
         prop "few entires, few queries" $
-            forAll (resize 10 $ listOf1 $ arbitrary @KeyValue) $
-                \entries ->
-            forAll (resize 10 $ someKeysOf entries) $
-                \queries ->
-            correctlySolves entries queries
+            withClassicalInput correctlySolves
 
     describe "special cases" $ do
-        describe "newlines" $
-            it "1 key-value pair, 1 query, no newline at end" $
-                launch "aa v1\n" "aa" `hasOnlyStdoutWhich` oneLine "v1"
+        describe "newlines" $ do
+            it "no newline at end of query" $
+                launch "aa v1\n" "aa" `hasOnlyStdoutWhichIs` oneLine "v1"
+
+            it "no newline at end of file" $
+                launch "aa v1" "aa\n" `hasOnlyStdoutWhichIs` oneLine "v1"
+
+            it "newlines here and there in file" $
+                withClassicalInput $
+                    \entries queries ->
+                forAll (variousNewlines $ toInput entries) $
+                    \fileInput ->
+
+                launch fileInput (toInput queries)
+                    `hasOnlyStdout`
+                buildList (solve entries queries)
+
+            it "newlines here and there in queries" $
+                withClassicalInput $
+                    \entries queries ->
+                forAll (variousNewlines $ toInput queries) $
+                    \input ->
+
+                launch (toInput entries) input
+                    `hasOnlyStdout`
+                buildList (solve entries queries)
 
         describe "minmax" . modifyMaxSuccess (`div` 10) $ do
             it "no entries" $
-                launch "" "" `hasOnlyStdoutWhich` null
+                launch "" "" `hasOnlyStdoutWhichIs` emptyOutput
 
             prop "plenty of entires, many queries" $
                 forAll (resize 1000 $ listOf1 arbitrary) $
@@ -86,29 +106,31 @@ spec = do
 launch :: ProgramFileInput -> ProgramInput -> IO ProgramOutput
 launch fileInput input = fillingInputFile fileInput $ launchProcess input
 
-hasOnlyStdoutExt :: IO ProgramOutput -> (ProgramStdout -> Expectation) -> Expectation
-hasOnlyStdoutExt launcher checker = do
+-- | By default they generate with size 100, this may be unpleasant to debug.
+withClassicalInput :: Testable prop => ([KeyValue] -> [Key] -> prop) -> Property
+withClassicalInput mkProp =
+    forAll (resize 10 $ listOf1 $ arbitrary @KeyValue) $
+        \entries ->
+    forAll (resize 10 $ someKeysOf entries) $
+        \queries ->
+    mkProp entries queries
+
+type Predicate = (Text, ProgramStdout -> Bool)
+
+hasOnlyStdoutWhichIs :: IO ProgramOutput -> Predicate -> Expectation
+hasOnlyStdoutWhichIs launcher (expected, checker) = do
     ProgramOutput{..} <- launcher
     unless (null poStderr) $
         expectationFailure . toString $
             "Expected empty stderr, but got: " <> poStderr
-    checker poStdout
-
-hasOnlyStdoutWhich :: IO ProgramOutput -> (ProgramStdout -> Bool) -> Expectation
-hasOnlyStdoutWhich launcher checker =
-    hasOnlyStdoutExt launcher $ \output ->
-        unless (checker output) $
-            expectationFailure $
-            formatToString ("Got wrong stdout: "%stext)
-                output
+    unless (checker poStdout) $
+        expectationFailure $
+        formatToString ("Got wrong stdout: "%stext%"\n  Expected: "%stext)
+            poStdout expected
 
 hasOnlyStdout :: IO ProgramOutput -> ProgramStdout -> Expectation
 hasOnlyStdout launcher expected =
-    hasOnlyStdoutExt launcher $ \output ->
-        unless (output == expected) $
-            expectationFailure $
-            formatToString ("Got wrong stdout: "%stext%"\n  Expected: "%stext)
-                output expected
+    hasOnlyStdoutWhichIs launcher (exactly expected)
 
 correctlySolves :: [KeyValue] -> [Key] -> Expectation
 correctlySolves entries queries =
@@ -117,6 +139,11 @@ correctlySolves entries queries =
     buildList (solve entries queries)
 
 
-oneLine :: Text -> Text -> Bool
-oneLine line output = line <> "\n" == output
+oneLine :: Text -> Predicate
+oneLine line = ("one line", \output -> line <> "\n" == output)
 
+emptyOutput :: Predicate
+emptyOutput = ("empty", null)
+
+exactly :: Text -> Predicate
+exactly a = (pretty a, (== a))

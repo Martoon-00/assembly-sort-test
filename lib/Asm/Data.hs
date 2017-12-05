@@ -6,11 +6,10 @@ import qualified Data.Map            as M
 import qualified Data.Text           as T
 import qualified Data.Text.Buildable
 import           Formatting          (bprint, build, (%))
-import           Test.QuickCheck     (Arbitrary (..), Gen, elements, listOf, sublistOf,
-                                      suchThat)
+import           Test.QuickCheck     (Arbitrary (..), Gen, elements, listOf, listOf1,
+                                      sublistOf, suchThat)
 import           Test.QuickCheck.Gen (choose, infiniteListOf)
 import           Universum
-import           Unsafe              (unsafeInit, unsafeLast)
 
 import           Asm.Process
 
@@ -78,8 +77,8 @@ removeLastNewline (ProgramInput t) =
 variousNewlines :: ProgramInput -> Gen ProgramInput
 variousNewlines (ProgramInput t) = do
     let pieces = T.split (== '\n') t
-    newlines' <- infiniteListOf (elements ['\n', '\r'])
+    (newlines : newlinesList) <-
+        infiniteListOf (fmap toText $ listOf1 $ elements ['\n', '\r'])
     return . ProgramInput $
-        mconcat (zipWith T.cons newlines' (unsafeInit pieces)) <>
-        unsafeLast pieces
+        mconcat (zipWith (<>) newlinesList pieces) <> newlines
 

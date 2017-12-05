@@ -62,6 +62,7 @@ test-suite assembly-sort-test
   build-depends:       base >= 4.7 && < 5
                      , assembly-sort-test
                      , formatting
+                     , text
                      , QuickCheck
                      , hspec
                      , universum
