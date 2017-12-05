@@ -6,11 +6,12 @@ import qualified Data.Map            as M
 import qualified Data.Text           as T
 import qualified Data.Text.Buildable
 import           Formatting          (bprint, build, (%))
-import           Test.QuickCheck     (Arbitrary (..), Gen, elements, listOf, listOf1,
-                                      sublistOf, suchThat)
+import           Test.QuickCheck     (Arbitrary (..), Gen, elements, frequency, listOf,
+                                      listOf1, sublistOf, suchThat)
 import           Test.QuickCheck.Gen (choose, infiniteListOf)
 import           Universum
 
+import           Asm.Env
 import           Asm.Process
 
 type Key = Text
@@ -50,11 +51,17 @@ withAsciiText = fmap toText . listOf $ choose ('\0', '\255') `suchThat` noContro
 instance Arbitrary KeyValue where
     arbitrary = genKeyValue withSimpleText
 
+-- | Pick up some key among given entries.
 someKeyOf :: [KeyValue] -> Gen Key
 someKeyOf = fmap getKey . elements
 
+-- | Pick up some keys among given entries.
 someKeysOf :: [KeyValue] -> Gen [Key]
-someKeysOf = listOf . someKeyOf
+someKeysOf = multiplier . someKeyOf
+  where
+    multiplier
+        | useOneQuery = \gen -> frequency [(1, pure []), (9, fmap pure gen)]
+        | otherwise   = listOf
 
 makeRepeatingKeys :: [KeyValue] -> Gen [KeyValue]
 makeRepeatingKeys entries
@@ -74,6 +81,7 @@ removeLastNewline :: ProgramInput -> ProgramInput
 removeLastNewline (ProgramInput t) =
     ProgramInput $ T.drop 1 $ T.dropWhileEnd (/= '\n') t
 
+-- | Insert arbitrary number of '\r's and '\n's instead of each '\n'.
 variousNewlines :: ProgramInput -> Gen ProgramInput
 variousNewlines (ProgramInput t) = do
     let pieces = T.split (== '\n') t
