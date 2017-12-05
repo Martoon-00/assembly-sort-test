@@ -16,11 +16,12 @@ main :: IO ()
 main = defaultMain
     [ -- launching process may be expensive operation, we track its time here
       fillingInputFileB "" $
-          bench "void launch" $ nfIO $ launchProcess ""
+          bench "void launch" $ nfIO $
+          checkingOutput $
+          launchProcess ""
 
-    , let !entries = generate $ vectorOf 1000 $ resize 10 $ arbitrary @KeyValue
+    , let !entries = generate $ vectorOf 10000 $ resize 10 $ arbitrary @KeyValue
       in  fillingInputFileB (toInput entries) $
-          -- TODO: throw on bad stderr
           bench "index build" $ nfIO $ launchProcess ""
 
     , let !entries = generate $ vectorOf 1 $ resize 10 arbitrary
@@ -31,8 +32,8 @@ main = defaultMain
             perRunEnv launchProcessWithInit $
             \interactionPhase -> interactionPhase input
 
-    , let !entries = generate $ vectorOf 1000 $ resize 10 arbitrary
-          !queries = generate $ vectorOf 10000 $ someKeyOf entries
+    , let !entries = generate $ vectorOf 10000 $ resize 10 arbitrary
+          !queries = generate $ vectorOf 100000 $ someKeyOf entries
           !input   = toInput queries
       in  fillingInputFileB (toInput entries) $
           bench "queries whole" $
@@ -50,6 +51,12 @@ fillingInputFileB
     -> (InputFileFilled => Benchmark)
     -> Benchmark
 fillingInputFileB = fillingInputFileWith envWithCleanup_
+
+checkingOutput :: IO ProgramOutput -> IO ()
+checkingOutput mkOutput =
+    mkOutput >>= \ProgramOutput{..} -> do
+        unless (null poStderr) $
+            error $ "Some message in stderr: " <> poStderr
 
 -- | Seed used to generate input data.
 benchSeed :: Int
