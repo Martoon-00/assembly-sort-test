@@ -1,5 +1,7 @@
 # assembly-sort-test
 
+[![Build Status](https://travis-ci.org/Martoon-00/assembly-sort-test.svg?branch=master)](https://travis-ci.org/Martoon-00/assembly-sort-test)
+
 Provides bunch of tests for assembly task which as part of Professional Development Program.
 
 ## How to use
