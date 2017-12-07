@@ -35,6 +35,6 @@ Behavior for "Not found" error is not fixated yet.
 
 ## Notes
 
-* Overwhelmed with quickcheck output? Keep `--test-arguments --fail-fast` in mind!
+* Overwhelmed by quickcheck output? Keep `--test-arguments --fail-fast` in mind!
 
 * Your contribution is very welcome!
