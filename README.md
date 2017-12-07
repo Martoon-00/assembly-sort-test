@@ -10,7 +10,7 @@ All parameters specific to your program are passed via environment, for instance
 
 `PROG_PATH='../assembly-task/sort' INPUT_FILE='sort.in' stack test`.
 
-Also some benchmarks are present, however I didn't manage to get reasonable measurements with them :/.
+Also some benchmarks are present, however I'm not sure they produce reasonable measurements :/
 
 ## Requirements
 
@@ -28,6 +28,10 @@ Behavior for "Not found" error is not fixated yet.
 * Program should be able to accept multiple queries until end of input.
 
 `ONE_QUERY=1` to disable.
+
+* Program should work with any common way of representing newlines, i.e. `LF`, `CR`, `CR+LF`.
+
+`LF_ONLY` to disable.
 
 ## Notes
 
