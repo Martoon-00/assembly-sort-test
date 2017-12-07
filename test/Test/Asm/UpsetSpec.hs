@@ -14,6 +14,7 @@ import           Universum
 
 import           Asm.Env
 import           Asm.Launcher
+import           Asm.Process
 import           Test.Asm.Common
 
 -- These tests execute only if 'LAX_TESTS' hasn't been passed,
@@ -42,24 +43,27 @@ spec = unless useLaxTests $ do
             launch "a v1\n\n\nb v2\nc" ""
                 `hasOnlyStderr` (errExit &&&& oneErrorWithLineNumber 5)
 
-launch :: ProgramFileInput -> ProgramInput -> IO (ExitCode, ProgramOutput)
+launch :: ProgramInput FileInput
+       -> ProgramInput Stdin
+       -> IO (ExitCode, ProgramProduct)
 launch fileInput input = fillingInputFile fileInput $ squashInit launchProcessExt input
 
-hasOnlyStderr :: IO (ExitCode, ProgramOutput)
-              -> ((ExitCode, ProgramStderr) -> Expectation)
+hasOnlyStderr :: IO (ExitCode, ProgramProduct)
+              -> ((ExitCode, ProgramOutput Stderr) -> Expectation)
               -> Expectation
 hasOnlyStderr launcher checker = do
-    (exitCode, ProgramOutput{..}) <- launcher
-    unless (null poStdout) $
+    (exitCode, ProgramProduct{..}) <- launcher
+    let output = pretty poStdout
+    unless (null output) $
         expectationFailure . toString $
-            "Expected empty stdout, but got: '" <> poStdout <> "'"
+            "Expected empty stdout, but got: '" <> output <> "'"
     checker (exitCode, poStderr)
 
 -- | Combine checker for exit code and checker for stderr.
 (&&&&)
     :: Predicate ExitCode
-    -> Predicate ProgramStderr
-    -> (ExitCode, ProgramStderr)
+    -> Predicate (ProgramOutput Stderr)
+    -> (ExitCode, ProgramOutput Stderr)
     -> Expectation
 (Predicate ecDesc ecCheck) &&&& (Predicate errDesc errCheck) =
     \(ec, err) -> do
@@ -80,17 +84,17 @@ okExit = "ok exit" >? (== ExitSuccess)
 errExit :: Predicate ExitCode
 errExit = "errorneous exit" >? (/= ExitSuccess)
 
-oneError :: Predicate ProgramStderr
+oneError :: Predicate (ProgramOutput Stderr)
 oneError = "one line with error" >? \output ->
-    case T.split (\c -> c == '\n' || c == '\r') output of
+    case T.split (\c -> c == '\n' || c == '\r') (pretty output) of
         [_, ""] -> True
         _       -> False
 
-oneErrorWithLineNumber :: Word -> Predicate ProgramStderr
+oneErrorWithLineNumber :: Word -> Predicate (ProgramOutput Stderr)
 oneErrorWithLineNumber lineNum =
     ("one error at line " <> pretty lineNum) >? \output ->
         and
         [ predicateCond oneError output
-        , pretty lineNum `T.isInfixOf` output
+        , pretty lineNum `T.isInfixOf` pretty output
         ]
 

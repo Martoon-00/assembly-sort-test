@@ -4,11 +4,6 @@
 
 module Asm.Launcher
     ( InputFileFilled
-    , ProgramFileInput
-    , ProgramInput (..)
-    , ProgramOutput (..)
-    , ProgramStdout
-    , ProgramStderr
     , ProgramException
     , fillingInputFile
     , fillingInputFileWith
@@ -22,7 +17,7 @@ module Asm.Launcher
 
 import           Data.Reflection     (Given, give)
 import qualified Data.Text.Buildable
-import           Formatting          (bprint, build, stext, (%))
+import           Formatting          (bprint, build, (%))
 import           System.Directory    (removeFile)
 import           System.Exit         (ExitCode (..))
 import           Universum
@@ -34,18 +29,15 @@ import           Asm.Process
 
 data InputFileFilledUp = InputFileFilledUp
 
--- | Indicates that input file has been created and filled, and that
--- assembly program is safe to execute.
+-- | Indicates that input file has been created and filled,
+-- so that assembly program is safe to execute.
 type InputFileFilled = Given InputFileFilledUp
-
--- | Key-value data executable should take from file.
-type ProgramFileInput = ProgramInput
 
 -- | Generalized version of 'fillingInputFile' to accept different
 -- 'bracket_'-like functions.
 fillingInputFileWith
     :: (IO () -> IO () -> b -> b)
-    -> ProgramFileInput
+    -> ProgramInput FileInput
     -> (InputFileFilled => b)
     -> b
 fillingInputFileWith bracket_' (ProgramInput fileInput) act =
@@ -59,7 +51,7 @@ fillingInputFileWith bracket_' (ProgramInput fileInput) act =
 --
 -- This function not part of launching functions with intention, see its usages
 -- in benchs.
-fillingInputFile :: ProgramFileInput -> (InputFileFilled => IO a) -> IO a
+fillingInputFile :: ProgramInput FileInput -> (InputFileFilled => IO a) -> IO a
 fillingInputFile = fillingInputFileWith bracket_
 
 -- * Launch
@@ -67,14 +59,14 @@ fillingInputFile = fillingInputFileWith bracket_
 -- | Runtime error
 data ProgramException = ProgramException
    { peExitCode :: Int
-   , peStderr   :: Text
+   , peStderr   :: ProgramOutput Stderr
    } deriving (Show)
 
 instance Exception ProgramException
 
 instance Buildable ProgramException where
     build ProgramException{..} =
-        bprint ("Program exited with "%build%"\nreason: "%stext)
+        bprint ("Program exited with "%build%"\nstderr: "%build)
         peExitCode peStderr
 
 -- | High-level launcher, which passed 'programPath' derived from environment
@@ -82,7 +74,7 @@ instance Buildable ProgramException where
 -- For full explanation see 'launchProcessWithInit' below.
 launchProcessExt
     :: InputFileFilled
-    => IO (ProgramInput -> IO (ExitCode, ProgramOutput))
+    => IO (ProgramInput Stdin -> IO (ExitCode, ProgramProduct))
 launchProcessExt = readCreateProcess programPath
 
 -- | Launches executable specified by 'programPath'.
@@ -94,7 +86,7 @@ launchProcessExt = readCreateProcess programPath
 -- If program terminates with error, inner 'IO' will throw 'ProgramException'.
 launchProcessWithInit
     :: InputFileFilled
-    => IO (ProgramInput -> IO ProgramOutput)
+    => IO (ProgramInput Stdin -> IO ProgramProduct)
 launchProcessWithInit =
     launchProcessExt <&> \performInteraction input -> do
         (exitCode, output) <- performInteraction input
@@ -109,6 +101,6 @@ squashInit launcher input = launcher >>= ($ input)
 -- | Launches executable specified by 'programPath'.
 --
 -- If program terminates with error, 'ProgramException' will be thrown.
-launchProcess :: InputFileFilled => ProgramInput -> IO ProgramOutput
+launchProcess :: InputFileFilled => ProgramInput Stdin -> IO ProgramProduct
 launchProcess = squashInit launchProcessWithInit
 

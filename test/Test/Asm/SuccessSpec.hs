@@ -4,7 +4,7 @@ module Test.Asm.SuccessSpec
     ( spec
     ) where
 
-import           Formatting            (formatToString, stext, (%))
+import           Formatting            (build, formatToString, (%))
 import           Test.Hspec            (Expectation, Spec, describe, expectationFailure,
                                         it)
 import           Test.Hspec.QuickCheck (modifyMaxSuccess, prop)
@@ -14,6 +14,7 @@ import           Universum
 
 import           Asm.Data
 import           Asm.Launcher
+import           Asm.Process
 import           Test.Asm.Common
 
 
@@ -45,7 +46,7 @@ spec = do
 
                 launch fileInput (toInput queries)
                     `hasOnlyStdout`
-                buildList (solve entries queries)
+                toOutput (solve entries queries)
 
             it "newlines here and there in queries" $
                 withClassicalInput $
@@ -55,7 +56,7 @@ spec = do
 
                 launch (toInput entries) input
                     `hasOnlyStdout`
-                buildList (solve entries queries)
+                toOutput (solve entries queries)
 
         describe "minmax" . modifyMaxSuccess (`div` 10) $ do
             it "no entries" $
@@ -104,7 +105,7 @@ spec = do
             correctlySolves entries queries
 
 
-launch :: ProgramFileInput -> ProgramInput -> IO ProgramOutput
+launch :: ProgramInput FileInput -> ProgramInput Stdin -> IO ProgramProduct
 launch fileInput input = fillingInputFile fileInput $ launchProcess input
 
 -- | By default they generate with size 100, this may be unpleasant to debug.
@@ -116,20 +117,21 @@ withClassicalInput mkProp =
         \queries ->
     mkProp entries queries
 
-hasOnlyStdoutWhichIs :: IO ProgramOutput
-                     -> Predicate ProgramStdout
+hasOnlyStdoutWhichIs :: IO ProgramProduct
+                     -> Predicate (ProgramOutput Stdout)
                      -> Expectation
 hasOnlyStdoutWhichIs launcher (Predicate expected checker) = do
-    ProgramOutput{..} <- launcher
-    unless (null poStderr) $
+    ProgramProduct{..} <- launcher
+    let errOutput = pretty poStderr
+    unless (null errOutput) $
         expectationFailure . toString $
-            "Expected empty stderr, but got: " <> poStderr
+            "Expected empty stderr, but got: " <> errOutput
     unless (checker poStdout) $
         expectationFailure $
-        formatToString ("Got wrong stdout: "%stext%"\n  Expected: "%stext)
+        formatToString ("Got wrong stdout: "%build%"\n  Expected: "%build)
             poStdout expected
 
-hasOnlyStdout :: IO ProgramOutput -> ProgramStdout -> Expectation
+hasOnlyStdout :: IO ProgramProduct -> ProgramOutput Stdout -> Expectation
 hasOnlyStdout launcher expected =
     hasOnlyStdoutWhichIs launcher (exactly expected)
 
@@ -137,11 +139,11 @@ correctlySolves :: [KeyValue] -> [Key] -> Expectation
 correctlySolves entries queries =
     launch (toInput entries) (toInput queries)
         `hasOnlyStdout`
-    buildList (solve entries queries)
+    toOutput (solve entries queries)
 
 
-oneLine :: Text -> Predicate ProgramStdout
-oneLine line = "one line" >? \output -> line <> "\n" == output
+oneLine :: ProgramOutput Stdout -> Predicate (ProgramOutput Stdout)
+oneLine line = "one line" >? \output -> pretty line <> "\n" == pretty output
 
-emptyOutput :: Predicate ProgramStdout
-emptyOutput = "empty" >? null
+emptyOutput :: Predicate (ProgramOutput Stdout)
+emptyOutput = "empty" >? null . pretty

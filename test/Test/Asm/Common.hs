@@ -15,6 +15,7 @@ data Predicate a = Predicate
     }
 
 -- | Convenient constructor alias.
+infix 6 >?
 (>?) :: Text -> (a -> Bool) -> Predicate a
 (>?) = Predicate
 

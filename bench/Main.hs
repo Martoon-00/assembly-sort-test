@@ -11,6 +11,7 @@ import           Universum
 
 import           Asm.Data
 import           Asm.Launcher
+import           Asm.Process
 
 main :: IO ()
 main = defaultMain
@@ -48,16 +49,17 @@ envWithCleanup_ pre post = envWithCleanup pre (const post) . const
 
 -- | Fills input file for the time of benchmark execution.
 fillingInputFileB
-    :: ProgramFileInput
+    :: ProgramInput FileInput
     -> (InputFileFilled => Benchmark)
     -> Benchmark
 fillingInputFileB = fillingInputFileWith envWithCleanup_
 
-checkingOutput :: IO ProgramOutput -> IO ()
+checkingOutput :: IO ProgramProduct -> IO ()
 checkingOutput mkOutput =
-    mkOutput >>= \ProgramOutput{..} -> do
-        unless (null poStderr) $
-            error $ "Some message in stderr: " <> poStderr
+    mkOutput >>= \ProgramProduct{..} -> do
+        let errOutput = pretty poStderr
+        unless (null errOutput) $
+            error $ "Some message in stderr: " <> errOutput
 
 -- | Seed used to generate input data.
 benchSeed :: Int

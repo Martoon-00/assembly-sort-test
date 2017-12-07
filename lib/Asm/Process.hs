@@ -4,9 +4,14 @@
 
 module Asm.Process
     ( ProgramInput (..)
-    , ProgramStdout
-    , ProgramStderr
     , ProgramOutput (..)
+
+    , Stdin
+    , Stdout
+    , Stderr
+    , FileInput
+    , ProgramProduct (..)
+
     , readCreateProcess
     ) where
 
@@ -27,21 +32,31 @@ import           System.Process           (CreateProcess (..), ProcessHandle,
 import           System.Process.Internals (ProcessHandle (..), stopDelegateControlC)
 import           Universum
 
--- TODO: type or newtype?
-newtype ProgramInput = ProgramInput Text
-    deriving (Show, IsString, Generic)
+-- | Specifies input for program.
+newtype ProgramInput which = ProgramInput Text
+    deriving (Eq, Show, IsString, Buildable, Generic)
 
-instance NFData ProgramInput
+instance NFData (ProgramInput w)
 
-type ProgramStdout = Text
-type ProgramStderr = Text
+-- | Various outputs of the program.
+newtype ProgramOutput which = ProgramOutput Text
+    deriving (Eq, Show, IsString, Buildable, Generic)
 
-data ProgramOutput = ProgramOutput
-    { poStdout :: !ProgramStdout
-    , poStderr :: !ProgramStderr
+instance NFData (ProgramOutput w)
+
+-- | Tags for 'ProgramInput' & 'ProgramOutput'.
+data Stdin
+data Stdout
+data Stderr
+data FileInput
+
+-- | All outputs of program.
+data ProgramProduct = ProgramProduct
+    { poStdout :: !(ProgramOutput Stdout)
+    , poStderr :: !(ProgramOutput Stderr)
     } deriving (Show, Generic)
 
-instance NFData ProgramOutput
+instance NFData ProgramProduct
 
 -- | Copy-pasted `readCreateProcess` functions, with slight differences:
 -- 1. Fetches both stdout and stderr
@@ -51,7 +66,7 @@ instance NFData ProgramOutput
 -- blocking until stdout and stderr are entirely evaluated.
 readCreateProcess
     :: FilePath
-    -> IO (ProgramInput -> IO (ExitCode, ProgramOutput))
+    -> IO (ProgramInput Stdin -> IO (ExitCode, ProgramProduct))
 readCreateProcess executable = do
     let cp_opts = (proc executable [])
             { std_in  = CreatePipe
@@ -68,9 +83,9 @@ readCreateProcess executable = do
             ProgramInput input <- takeMVar inputBox
 
             -- fork off a thread to start consuming the output
-            poStdout <- toText <$> hGetContents outh
-            poStderr <- toText <$> hGetContents errh
-            let result = ProgramOutput{..}
+            poStdout <- ProgramOutput . toText <$> hGetContents outh
+            poStderr <- ProgramOutput . toText <$> hGetContents errh
+            let result = ProgramProduct{..}
             withForkWait (evaluate $ seq result ()) $ \waitOut -> do
 
                 -- now write any input
