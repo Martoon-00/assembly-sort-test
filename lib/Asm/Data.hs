@@ -85,11 +85,11 @@ makeRepeatingKeys entries
         forM entries $ \(KeyValue _ value) -> flip KeyValue value <$> elements keys'
 
 -- | Print entries one per line.
-toOutput :: Buildable a => [a] -> ProgramOutput __
+toOutput :: Buildable a => [a] -> ProgramOutput w
 toOutput = ProgramOutput . foldMap ((<> "\n") . pretty)
 
 -- | Print entries one per line.
-toInput :: Buildable a => [a] -> ProgramInput __
+toInput :: Buildable a => [a] -> ProgramInput w
 toInput = ProgramInput . foldMap ((<> "\n") . pretty)
 
 -- | Remove last newline.
@@ -97,12 +97,18 @@ removeLastNewline :: ProgramInput a -> ProgramInput a
 removeLastNewline (ProgramInput t) =
     ProgramInput $ T.drop 1 $ T.dropWhileEnd (/= '\n') t
 
--- | Insert arbitrary number of '\r's and '\n's instead of each '\n'.
+-- | Newlines characters which program should be able to process in input.
+newlines :: [Text]
+newlines
+    | useLfOnly = ["\n"]
+    | otherwise = ["\n", "\r", "\r\n"]
+
+-- | Insert arbitrary number of newlines instead of each '\n'.
 variousNewlines :: ProgramInput a -> Gen (ProgramInput a)
 variousNewlines (ProgramInput t) = do
     let pieces = T.split (== '\n') t
-    (newlines : newlinesList) <-
-        infiniteListOf (fmap toText $ listOf1 $ elements ['\n', '\r'])
+    (nl : nls) <-
+        infiniteListOf (fmap mconcat $ listOf1 $ elements newlines)
     return . ProgramInput $
-        mconcat (zipWith (<>) newlinesList pieces) <> newlines
+        mconcat (zipWith (<>) nls pieces) <> nl
 

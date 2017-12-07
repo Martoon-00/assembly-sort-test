@@ -6,6 +6,7 @@ module Asm.Env
     , inputFile
     , useOneQuery
     , useLaxTests
+    , useLfOnly
     ) where
 
 import           System.Environment (lookupEnv)
@@ -40,3 +41,8 @@ useOneQuery = flag "ONE_QUERY"
 useLaxTests :: Bool
 useLaxTests = flag "LAX_TESTS"
 {-# NOINLINE useLaxTests #-}
+
+-- | Assume that program can work only with '\n' newline.
+useLfOnly :: Bool
+useLfOnly = flag "LF_ONLY"
+{-# NOINLINE useLfOnly #-}
